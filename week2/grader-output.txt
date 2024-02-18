@@ -1,0 +1,9 @@
+************************************************************
+Class tested: project
+	 Number of tests passed: 54/54
+	 Failed tests :
+All the tests are passed successfully.
+	 Total number of points : 270
+************************************************************
+
+[ corrigé le 18/02/2024 à 18:27, correcteur version 3.3.0 ]

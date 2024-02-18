@@ -1,14 +1,15 @@
 package ch.epfl.moocprog;
 
+import ch.epfl.moocprog.utils.Utils;
+
 /**
  * Classe modélisant la nourriture consommable par les fourmis
  */
 public final class Food extends Positionable{
-	ToricPosition tp;
-	double quantityOfFood;
+	private double quantityOfFood;
 	
-	public Food(ToricPosition tp, double quantityOfFood) {
-		super(tp);
+	public Food(final ToricPosition tp, double quantityOfFood) {
+		super.setPosition(tp);
 		if(quantityOfFood < 0)
 			quantityOfFood = 0.0;
 		this.quantityOfFood = quantityOfFood;				
@@ -29,15 +30,17 @@ public final class Food extends Positionable{
 	 * @return La quantité qui a pu être prélevée
 	 */
 	public double takeQuantity(double takeQty) {
-		if(takeQty < 0.0)
-			throw new IllegalArgumentException("La quantité de nourriture à prélever ne peut pas être négative.");
-		
-		if(takeQty <= quantityOfFood)
+		Utils.require("La quantité de nourriture à prélever ne peut pas être négative.", takeQty >= 0.0);
+		double taken = 0;
+		if(takeQty <= quantityOfFood) {
+			taken = takeQty;
 			quantityOfFood -= takeQty;
-		else
+		}
+		else { // takeQty > quantityOfFood
+			taken = quantityOfFood;
 			quantityOfFood = 0.0;
-		
-		return takeQty;
+		}
+		return taken;
 	}
 
 	@Override
