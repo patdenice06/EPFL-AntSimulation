@@ -2,21 +2,26 @@ package ch.epfl.moocprog;
 
 import ch.epfl.moocprog.random.UniformDistribution;
 import ch.epfl.moocprog.utils.Time;
+import ch.epfl.moocprog.utils.Utils;
 import ch.epfl.moocprog.utils.Vec2d;
 
 import static ch.epfl.moocprog.app.Context.getConfig;
 import static ch.epfl.moocprog.config.Config.*;
 
+import ch.epfl.moocprog.config.Config;
+
 abstract public class Animal extends Positionable{
-	private double angle;	// l'angle de direction pour les déplacements
-	private int hitpoints;	// points de vie
-	private Time lifespan; 	// durée maximale de vie
+	private double angle;		// l'angle de direction pour les déplacements
+	private int hitpoints;		// points de vie
+	private Time lifespan; 		// durée maximale de vie
+	private Time rotationDelay; // mesure le temps écoulé depuis la précédente rotation
 
 	public Animal(ToricPosition tp, int hitpoints, Time lifespan) {
 		super. setPosition(tp);
 		this.hitpoints = hitpoints;
 		this.lifespan = lifespan;
 		this.angle = UniformDistribution.getValue(0, 2 * Math.PI);
+		rotationDelay = Time.ZERO;
 	}
 
 	/**
@@ -89,18 +94,46 @@ abstract public class Animal extends Positionable{
 		}
 	}
 	
-	
-	/**
-	 * Déplacements rectilignes uniformes de l'animal tout en gardant
-	 * l'angle de direction
-	 * @param	dt	Le pas de temps
-	 */
-	final protected void move(Time dt) {
-		Vec2d vecteurDeplacement = Vec2d.fromAngle(this.getDirection()).scalarProduct(dt.toSeconds() * this.getSpeed());
-		this.setPosition(this.getPosition().add(vecteurDeplacement));
+	protected final void move(Time dt) {		
+		final Time delay = getConfig().getTime(ANIMAL_NEXT_ROTATION_DELAY);
+		rotationDelay = rotationDelay.plus(dt);
+		while (rotationDelay.compareTo(delay) >= 0) {
+			rotate();
+			rotationDelay = rotationDelay.minus(delay);
+		}
+		this.getPosition().toVec2d();
+		setPosition(this.getPosition().add(Vec2d.fromAngle(getDirection()).scalarProduct(dt.toSeconds()*(getSpeed()))));
 	}
 	
-
+	
+	private void rotate() {
+		RotationProbability rp = computeRotationProbs();
+		setDirection(getDirection() + Utils.pickValue(rp.getAngles(), rp.getProbabilities()));
+	}
+	
+	
+	
+	/**
+	 * Associe un tableau d’angles à un tableau de probabilité
+	 * @return	a RotationProbability
+	 */
+	protected RotationProbability computeRotationProbs() {
+		// Angles de déplacement
+		double[] anglesInDegrees = new double[] {-180, -100, -55, -25, -10, 0, 10, 25, 55, 100, 180}; 
+		//  Probabilités associées aux angles de déplacement
+		double[] probabilities = new double[] {0.0000, 0.0000, 0.0005, 0.0010, 0.0050, 
+				0.9870, 0.0050, 0.0010, 0.0005, 0.0000, 0.0000};
+		double[] anglesInRadians = new double[11];
+		
+		// Convertion des angles de degrés en radians
+		for (int i = 0; i < anglesInDegrees.length; i++) {
+			anglesInRadians[i] = Math.toRadians(anglesInDegrees[i]);
+		}			
+		
+		return new RotationProbability(anglesInRadians, probabilities);		
+	}
+	
+	
 	@Override
 	public String toString() {
 		return "" + getPosition() + "\n"
